@@ -33,16 +33,35 @@ y0 = S0, I0, R0
 ret = odeint(deriv, y0, t, args=(N, beta, gamma))
 S, I, R = ret.T
 
+# R Plot
+r = (beta*S)/(gamma*N)
+plt.xlim(0, 150)
+plt.ylim(0, 4)
+plt.plot(t, r, label = "Reproductive Number")
+plt.axhline(y = 1, linestyle = '--')
+plt.legend(loc='upper right')
+plt.show()
+
+# Plot the data on three separate curves for S(t), I(t) and R(t)
+plt.xlim(0, 150)
+plt.ylim(0, 1200)
+plt.plot(t, S, label = "Susceptible")
+plt.plot(t, I, label = "Infected")
+plt.plot(t, R, label = "Recovered")
+plt.legend(loc='upper right')
+plt.show()
+
+
 #Plot Vector Field
 # fig = plt.figure()
 # ax = fig.add_subplot(111, projection='3d')
-plt.xlim(0, 20)
-plt.ylim(0, 1200)
+# plt.xlim(0, 20)
+# plt.ylim(0, 1200)
 # ax.axes.set_xlim3d(left=0, right=50) 
 # ax.axes.set_ylim3d(bottom=0, top=50) 
 # ax.axes.set_zlim3d(bottom=50, top=100) 
 # plt.quiver(s, i, u, v)
 # plt.streamplot(S, I, U, V)
-plt.stackplot(t, I, S, R, labels=['Infected','Susceptible','Recovered'])
-plt.legend(loc='upper right')
-plt.show()
+# plt.stackplot(t, I, S, R, labels=['Infected','Susceptible','Recovered'])
+# plt.legend(loc='upper right')
+# plt.show()
