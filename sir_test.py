@@ -36,7 +36,7 @@ S, I, R = ret.T
 # R Plot
 r = (beta*S)/(gamma*N)
 plt.xlim(0, 150)
-plt.ylim(0, 4)
+plt.ylim(0, 10)
 plt.plot(t, r, label = "Reproductive Number")
 plt.axhline(y = 1, linestyle = '--')
 plt.legend(loc='upper right')
