@@ -5,7 +5,7 @@ from mpl_toolkits.mplot3d import axes3d
 from r_plot import r_plot
 
 # Test Case
-test_case = 'Quarantine'
+test_case = 'Test'
 
 # Total population, N.
 N = 1000
@@ -27,19 +27,26 @@ if (r0) > 1:
 # The SEIQRS model differential equations.
 def deriv(y, t, beta, phi, zeta, gamma, kappa, mu):
     S, E, I, Q, R = y
-    dSdt = ((-beta * S * I)) + (mu * R)
-    dEdt = ((beta * S * I)) - (phi * E)
+    dSdt = ((-beta * S * I)/N) + (mu * R)
+    dEdt = ((beta * S * I)/N) - (phi * E)
     dIdt = (phi * E) - (gamma * I) - (zeta * I)
     dQdt = (zeta * I) - (kappa * Q)
     dRdt = (gamma * I) + (kappa * Q) - (mu * R)
     return dSdt, dEdt, dIdt, dQdt, dRdt
 
 # Initial conditions vector
-y0 = S0/N, E0/N, I0/N, Q0/N, R0/N
+y0 = S0, E0, I0, Q0, R0
 # Integrate the SIR equations over the time grid, t.
 ret = odeint(deriv, y0, t, args=(beta, phi, zeta, gamma, kappa, mu))
 S, E, I, Q, R = ret.T
-S, E, I, Q, R = S*N, E*N, I*N, Q*N, R*N
+
+Se = (N*(gamma+zeta))/beta
+Ie = (phi*kappa*mu*N*(beta-gamma-zeta))/(beta*((kappa*(gamma+zeta)*(mu+phi))+(phi*mu*(kappa+zeta))))
+Ee = (beta*Se*Ie)/(N*phi)
+Qe = (zeta*Ie)/(kappa)
+Re = (Ie*(gamma+zeta))/mu
+
+print(f'Se: {Se}, Ee: {Ee}, Ie: {Ie}, Qe: {Qe}, Re: {Re}')
 
 # R Plot
 # r_vals = r_plot(S, N, beta, gamma, kappa)
@@ -67,6 +74,11 @@ plt.plot(t, E, label = "Exposed")
 plt.plot(t, I, label = "Infected")
 plt.plot(t, Q, label = "Quarantined")
 plt.plot(t, R, label = "Recovered")
+plt.axhline(y = Se, linestyle = '--')
+plt.axhline(y = Ee, linestyle = '--')
+plt.axhline(y = Ie, linestyle = '--')
+plt.axhline(y = Qe, linestyle = '--')
+plt.axhline(y = Re, linestyle = '--')
 plt.legend(loc='upper right')
 plt.title(f'SEIQRS State over Time ({test_case} Case)')
 plt.xlabel('Time (Days)')
