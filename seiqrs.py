@@ -5,7 +5,8 @@ from mpl_toolkits.mplot3d import axes3d
 from r_plot import r_plot
 
 # Test Case
-test_case = 'Test'
+test_case = 'Quarantine'
+print(f'Test Case: {test_case}')
 
 # Total population, N.
 N = 1000
@@ -13,8 +14,8 @@ N = 1000
 E0, I0, Q0, R0 = 0, 1, 0, 0
 # Everyone else, S0, is susceptible to infection initially.
 S0 = N - E0 - I0 - Q0 - R0 
-# Contact rate(beta), incubation period(phi, in 1/days), quarantine percentage(zeta), mean recovery rate in non-quarantine(gamma, in 1/days), mean recovery rate in quarantine(kappa, in 1/days), and immunity wearoff rate(mu, in 1/days).
-beta, phi, zeta, gamma, kappa, mu = 0.75, 1./10, 0.20, 1./10, 1./10, 1./60
+# Contact rate(beta), incubation period(phi, in 1/days), quarantine percentage(zeta, in 1/days), mean recovery rate in non-quarantine(gamma, in 1/days), mean recovery rate in quarantine(kappa, in 1/days), and immunity wearoff rate(mu, in 1/days).
+beta, phi, zeta, gamma, kappa, mu = 0.9, 1./10, (1./10)*1.3, 1./10, 1./10, (1./60)
 # A grid of time points (in days)
 t = np.linspace(0, 160*10, 160*10)
 
@@ -58,16 +59,18 @@ print(f'Se: {Se}, Ee: {Ee}, Ie: {Ie}, Qe: {Qe}, Re: {Re}')
 # plt.show()
 
 #Plot Stacked Area Graph
-# plt.xlim(0, 160*10)
-# plt.ylim(0, 1200)
-# plt.stackplot(t, E, I, Q, S, R, labels=['Exposed', 'Infected', 'Quarantined','Susceptible','Recovered'])
-# plt.legend(loc='upper right')
-# plt.xlabel('Time (Days)')
-# plt.ylabel('Amount of Population (People)')
-# plt.show()
+plt.xlim(0, 150)
+plt.ylim(0, 1200)
+plt.stackplot(t, E, I, Q, S, R, labels=['Exposed', 'Infected', 'Quarantined','Susceptible','Recovered'])
+plt.legend(loc='upper right')
+plt.title(f'Stacked SEIQRS States over Time ({test_case} Case)')
+plt.xlabel('Time (Days)')
+plt.ylabel('Amount of Population (People)')
+plt.savefig(f'pics\{test_case} Case_Stack.png')
+plt.show()
 
 #Plot Line Graph
-plt.xlim(0, 600)
+plt.xlim(0, 150)
 plt.ylim(0, 1200)
 plt.plot(t, S, label = "Susceptible")
 plt.plot(t, E, label = "Exposed")
