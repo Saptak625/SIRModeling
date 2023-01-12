@@ -2,6 +2,10 @@ import numpy as np
 from scipy.integrate import odeint
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import axes3d
+from r_plot import r_plot
+
+# Test Case
+test_case = 'Quarantine'
 
 # Total population, N.
 N = 1000
@@ -10,45 +14,62 @@ E0, I0, Q0, R0 = 0, 1, 0, 0
 # Everyone else, S0, is susceptible to infection initially.
 S0 = N - E0 - I0 - Q0 - R0 
 # Contact rate(beta), incubation period(phi, in 1/days), quarantine percentage(zeta), mean recovery rate in non-quarantine(gamma, in 1/days), mean recovery rate in quarantine(kappa, in 1/days), and immunity wearoff rate(mu, in 1/days).
-beta, phi, zeta, gamma, kappa, mu = 0.75, 1./10, 0.25, 1./10, 1./10, 1./180
+beta, phi, zeta, gamma, kappa, mu = 0.75, 1./10, 0.20, 1./10, 1./10, 1./60
 # A grid of time points (in days)
 t = np.linspace(0, 160*10, 160*10)
 
 print(f'Beta: {beta}, Gamma: {gamma}')
-print(f'R0: {beta/gamma}')
-if (beta/gamma) > 1:
+r0 = r_plot(S0, N, beta, gamma, kappa)
+print(f'R0: {r0}')
+if (r0) > 1:
     print('Epidemic!')
 
 # The SEIQRS model differential equations.
-def deriv(y, t, N, beta, phi, zeta, gamma, kappa, mu):
+def deriv(y, t, beta, phi, zeta, gamma, kappa, mu):
     S, E, I, Q, R = y
-    dSdt = ((-beta * S * I) / N) + (mu * R)
-    dEdt = ((beta * S * I) / N) - (phi * E)
+    dSdt = ((-beta * S * I)) + (mu * R)
+    dEdt = ((beta * S * I)) - (phi * E)
     dIdt = (phi * E) - (gamma * I) - (zeta * I)
     dQdt = (zeta * I) - (kappa * Q)
     dRdt = (gamma * I) + (kappa * Q) - (mu * R)
     return dSdt, dEdt, dIdt, dQdt, dRdt
 
 # Initial conditions vector
-y0 = S0, E0, I0, Q0, R0
+y0 = S0/N, E0/N, I0/N, Q0/N, R0/N
 # Integrate the SIR equations over the time grid, t.
-ret = odeint(deriv, y0, t, args=(N, beta, phi, zeta, gamma, kappa, mu))
+ret = odeint(deriv, y0, t, args=(beta, phi, zeta, gamma, kappa, mu))
 S, E, I, Q, R = ret.T
+S, E, I, Q, R = S*N, E*N, I*N, Q*N, R*N
+
+# R Plot
+# r_vals = r_plot(S, N, beta, gamma, kappa)
+# plt.xlim(0, 160*10)
+# plt.plot(t, r_vals, label = "Reproductive Number")
+# plt.title(f'Reproductive Number over Time ({test_case})')
+# plt.xlabel('Time (Days)')
+# plt.ylabel('Reproductive Number')
+# plt.show()
 
 #Plot Stacked Area Graph
-plt.xlim(0, 160*10)
-plt.ylim(0, 1200)
-plt.stackplot(t, E, I, Q, S, R, labels=['Exposed', 'Infected', 'Quarantined','Susceptible','Recovered'])
-plt.legend(loc='upper right')
-plt.show()
+# plt.xlim(0, 160*10)
+# plt.ylim(0, 1200)
+# plt.stackplot(t, E, I, Q, S, R, labels=['Exposed', 'Infected', 'Quarantined','Susceptible','Recovered'])
+# plt.legend(loc='upper right')
+# plt.xlabel('Time (Days)')
+# plt.ylabel('Amount of Population (People)')
+# plt.show()
 
 #Plot Line Graph
-# plt.xlim(0, 120)
-# plt.ylim(0, 1200)
-# plt.plot(t, S, label = "Susceptible")
-# plt.plot(t, E, label = "Exposed")
-# plt.plot(t, I, label = "Infected")
-# plt.plot(t, Q, label = "Quarantined")
-# plt.plot(t, R, label = "Recovered")
-# plt.legend(loc='upper right')
-# plt.show()
+plt.xlim(0, 600)
+plt.ylim(0, 1200)
+plt.plot(t, S, label = "Susceptible")
+plt.plot(t, E, label = "Exposed")
+plt.plot(t, I, label = "Infected")
+plt.plot(t, Q, label = "Quarantined")
+plt.plot(t, R, label = "Recovered")
+plt.legend(loc='upper right')
+plt.title(f'SEIQRS State over Time ({test_case} Case)')
+plt.xlabel('Time (Days)')
+plt.ylabel('Amount of Population (People)')
+plt.savefig(f'pics\{test_case} Case.png')
+plt.show()
