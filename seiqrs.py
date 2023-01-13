@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from r_plot import r_plot
 
 # Test Case
-test_case = 'Lockdown'
+test_case = 'Control'
 print(f'Test Case: {test_case}')
 
 # Total population, N.
@@ -15,7 +15,7 @@ E0, I0, Q0, R0 = 0, 1, 0, 0
 # Everyone else, S0, is susceptible to infection initially.
 S0 = N - E0 - I0 - Q0 - R0 
 # Contact rate(beta), incubation period(phi, in 1/days), quarantine rate(zeta, in 1/days), mean recovery rate in non-quarantine(gamma, in 1/days), mean recovery rate in quarantine(kappa, in 1/days), and immunity wearoff rate(mu, in 1/days).
-beta, phi, zeta, gamma, kappa, mu = 0.9*0.7, 1./10, (1./10), 1./10, 1./10, (1./60)
+beta, phi, zeta, gamma, kappa, mu = 0.9, 1./10, (1./10), 1./10, 1./10, (1./60)
 # A grid of time points (in days)
 t = np.linspace(0, 160*10, 160*10)
 
@@ -48,6 +48,9 @@ Qe = (zeta*Ie)/(kappa)
 Re = (Ie*(gamma+zeta))/mu
 
 print(f'Se: {Se}, Ee: {Ee}, Ie: {Ie}, Qe: {Qe}, Re: {Re}')
+
+print(f'Imax = {max(I)}')
+print(f'Cases(max) = {max(I+Q)}')
 
 # R Plot
 r_vals = r_plot(S, N, beta, gamma, zeta)

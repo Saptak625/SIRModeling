@@ -35,7 +35,7 @@ S, I, R = ret.T
 
 # R Plot
 r = (beta*S)/(gamma*N)
-plt.xlim(0, 150)
+plt.xlim(0, 70)
 plt.ylim(0, 10)
 plt.plot(t, r, label = "Reproductive Number")
 plt.axhline(y = 1, linestyle = '--')
@@ -43,11 +43,14 @@ plt.legend(loc='upper right')
 plt.show()
 
 # Plot the data on three separate curves for S(t), I(t) and R(t)
-plt.xlim(0, 150)
+plt.xlim(0, 70)
 plt.ylim(0, 1200)
 plt.plot(t, S, label = "Susceptible")
 plt.plot(t, I, label = "Infected")
 plt.plot(t, R, label = "Recovered")
+plt.title(f'SIR State over Time')
+plt.xlabel('Time (Days)')
+plt.ylabel('Amount of Population (People)')
 plt.legend(loc='upper right')
 plt.show()
 
