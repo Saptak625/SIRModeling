@@ -3,13 +3,14 @@ from scipy.integrate import odeint
 import matplotlib.pyplot as plt
 # from mpl_toolkits.mplot3d import axes3d
 from r_plot import r_plot
+from model import deriv
 
 # Test Case
-test_case = 'Control'
+test_case = 'High Population'
 print(f'Test Case: {test_case}')
 
 # Total population, N.
-N = 1000
+N = 100000
 # Initial number of infected and recovered individuals, I0 and R0.
 E0, I0, Q0, R0 = 0, 1, 0, 0
 # Everyone else, S0, is susceptible to infection initially.
@@ -25,20 +26,10 @@ print(f'R0: {r0}')
 if (r0) > 1:
     print('Epidemic!')
 
-# The SEIQRS model differential equations.
-def deriv(y, t, beta, phi, zeta, gamma, kappa, mu):
-    S, E, I, Q, R = y
-    dSdt = ((-beta * S * I)/N) + (mu * R)
-    dEdt = ((beta * S * I)/N) - (phi * E)
-    dIdt = (phi * E) - (gamma * I) - (zeta * I)
-    dQdt = (zeta * I) - (kappa * Q)
-    dRdt = (gamma * I) + (kappa * Q) - (mu * R)
-    return dSdt, dEdt, dIdt, dQdt, dRdt
-
 # Initial conditions vector
 y0 = S0, E0, I0, Q0, R0
 # Integrate the SIR equations over the time grid, t.
-ret = odeint(deriv, y0, t, args=(beta, phi, zeta, gamma, kappa, mu))
+ret = odeint(deriv, y0, t, args=(N, beta, phi, zeta, gamma, kappa, mu))
 S, E, I, Q, R = ret.T
 
 Se = (N*(gamma+zeta))/beta
@@ -66,7 +57,7 @@ plt.show()
 
 #Plot Stacked Area Graph
 plt.xlim(0, 150)
-plt.ylim(0, 1200)
+plt.ylim(0, 120000)
 plt.stackplot(t, E, I, Q, S, R, labels=['Exposed', 'Infected', 'Quarantined','Susceptible','Recovered'])
 plt.legend(loc='upper right')
 plt.title(f'Stacked SEIQRS States over Time ({test_case} Case)')
@@ -77,7 +68,7 @@ plt.show()
 
 #Plot Line Graph
 plt.xlim(0, 150)
-plt.ylim(0, 1200)
+plt.ylim(0, 120000)
 plt.plot(t, S, label = "Susceptible")
 plt.plot(t, E, label = "Exposed")
 plt.plot(t, I, label = "Infected")
