@@ -16,18 +16,21 @@ with tqdm(total=2) as pbar:
     pbar.update(1)
     time.sleep(0.1)
     # probabilities = pd.read_csv("https://raw.githubusercontent.com/hf2000510/infectious_disease_modelling/master/data/probabilities.csv")
-    covid_data = pd.read_csv("https://tinyurl.com/t59cgxn", parse_dates=["Date"], skiprows=[1])
-    covid_data["Location"] = covid_data["Country/Region"]
+    covid_data = pd.read_csv("https://covid19.who.int/WHO-COVID-19-global-data.csv", parse_dates=["Date_reported"])
+    covid_data["Location"] = covid_data["Country"]
     pbar.update(1)
     time.sleep(0.1)
-
 
 agegroup_lookup = dict(zip(agegroups['Location'], agegroups[['0_9', '10_19', '20_29', '30_39', '40_49', '50_59', '60_69', '70_79', '80_89', '90_100']].values))
 
 # parameters
-data = covid_data[covid_data["Location"] == "Italy"]["Value"].values[::-1]
+data = covid_data[covid_data["Location"] == "Italy"]["Cumulative_cases"].values
+# data = data[:len(data)//3]
+data = data[700:] # start at nth day
+print(len(data))
+data -= data[0] # start cumulative sum at 0
 agegroups = agegroup_lookup["Italy"]
-outbreak_shift = 30
+outbreak_shift = 200  # shift the outbreak by this many days (negative values are allowed)
 params_init_min_max = {"beta": (0.9, 0.1, 2), "zeta": (1./10, 1./50, 1), "mu": (1./60, 1./300, 1./5)}  # form: {parameter: (initial guess, minimum value, max value)}
      
 
@@ -35,7 +38,7 @@ days = outbreak_shift + len(data)
 if outbreak_shift >= 0:
     y_data = np.concatenate((np.zeros(outbreak_shift), data))
 else:
-    y_data = y_data[-outbreak_shift:]
+    y_data = data[-outbreak_shift:]
 
 x_data = np.linspace(0, days - 1, days, dtype=int)  # x_data is just [0, 1, ..., max_days] array
 
@@ -47,20 +50,20 @@ kappa = 1/3
 # Must Fit Beta, Zeta, Mu
 def fitter(x, beta, zeta, mu):
     ret = Model(days, agegroups, beta, phi, zeta, gamma, kappa, mu)
-    # Model returns bit tuple. 7-th value (index=6) is list with deaths per day.
-    deaths_predicted = ret[5]
+    infections = ret[4]
     # print(deaths_predicted)
     # print(x)
 
     # print()
-    return deaths_predicted
+    return infections.cumsum()
 
 
 # Fit the model
 mod = lmfit.Model(fitter)
 
 for kwarg, (init, mini, maxi) in params_init_min_max.items():
-    mod.set_param_hint(str(kwarg), value=init, min=mini, max=maxi, vary=True)
+    # mod.set_param_hint(str(kwarg), value=init, min=mini, max=maxi, vary=True)
+    mod.set_param_hint(str(kwarg), value=init, min=0, vary=True)
 
 params = mod.make_params()
 fit_method = "leastsq"
@@ -70,4 +73,80 @@ result = mod.fit(y_data, params, method=fit_method, x=x_data)
      
 
 result.plot_fit(datafmt="-")
+print(result.best_values)
+plt.show(block=False)
+
+# Using the fitted parameters
+beta = result.best_values["beta"]
+zeta = result.best_values["zeta"]
+mu = result.best_values["mu"]
+t, N, S, E, I, Q, R, r_vals = Model(days, agegroups, beta, phi, zeta, gamma, kappa, mu)
+
+# Undo Modelling Outbreak Shift
+t = t[outbreak_shift:]
+t -= t[0] + 1 # shift the x axis to start at 1
+S = S[outbreak_shift:]
+E = E[outbreak_shift:]
+I = I[outbreak_shift:]
+Q = Q[outbreak_shift:]
+R = R[outbreak_shift:]
+r_vals = r_vals[outbreak_shift:]
+
+Se = (N*(gamma+zeta))/beta
+Ie = (phi*kappa*mu*N*(beta-gamma-zeta))/(beta*((kappa*(gamma+zeta)*(mu+phi))+(phi*mu*(kappa+zeta))))
+Ee = (beta*Se*Ie)/(N*phi)
+Qe = (zeta*Ie)/(kappa)
+Re = (Ie*(gamma+zeta))/mu
+
+print(f'Se: {Se}, Ee: {Ee}, Ie: {Ie}, Qe: {Qe}, Re: {Re}')
+
+print(f'Imax = {max(I)}')
+print(f'Cases(max) = {max(I+Q)}')
+
+# R Plot
+plt.figure()
+plt.xlim(0, 160)
+plt.ylim(0, 6)
+plt.plot(t, r_vals, label = "Reproductive Number")
+plt.axhline(y = 1, linestyle = '--')
+plt.title(f'Reproductive Number over Time')
+plt.xlabel('Time (Days)')
+plt.ylabel('Reproductive Number')
+# plt.savefig(f'pics\{test_case} Case_R_plot.png')
+plt.autoscale()
+plt.show(block=False)
+
+#Plot Stacked Area Graph
+plt.figure()
+plt.xlim(0, 150)
+plt.ylim(0, 120000)
+plt.stackplot(t, E, I, Q, S, R, labels=['Exposed', 'Infected', 'Quarantined','Susceptible','Recovered'])
+plt.legend(loc='upper right')
+plt.title(f'Stacked SEIQRS States over Time')
+plt.xlabel('Time (Days)')
+plt.ylabel('Amount of Population (People)')
+# plt.savefig(f'pics\{test_case} Case_Stack.png')
+plt.autoscale()
+plt.show(block=False)
+
+#Plot Line Graph
+plt.figure()
+plt.xlim(0, 150)
+plt.ylim(0, 120000)
+plt.plot(t, S, label = "Susceptible")
+plt.plot(t, E, label = "Exposed")
+plt.plot(t, I, label = "Infected")
+plt.plot(t, Q, label = "Quarantined")
+plt.plot(t, R, label = "Recovered")
+plt.axhline(y = Se, linestyle = '--')
+plt.axhline(y = Ee, linestyle = '--')
+plt.axhline(y = Ie, linestyle = '--')
+plt.axhline(y = Qe, linestyle = '--')
+plt.axhline(y = Re, linestyle = '--')
+plt.legend(loc='upper right')
+plt.title(f'SEIQRS State over Time')
+plt.xlabel('Time (Days)')
+plt.ylabel('Amount of Population (People)')
+# plt.savefig(f'pics\{test_case} Case.png')
+plt.autoscale()
 plt.show()

@@ -18,4 +18,4 @@ def Model(days, agegroups, beta, phi, zeta, gamma, kappa, mu):
 
     R_0_over_time = r_plot(S, N, beta, gamma, zeta)  # get R0 over time for plotting
 
-    return t, S, E, I, Q, R, R_0_over_time
+    return t, N, S, E, I, Q, R, R_0_over_time
