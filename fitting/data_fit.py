@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 import time
+import datetime
 from matplotlib import pyplot as plt
 import lmfit
 
@@ -24,12 +25,24 @@ with tqdm(total=2) as pbar:
 agegroup_lookup = dict(zip(agegroups['Location'], agegroups[['0_9', '10_19', '20_29', '30_39', '40_49', '50_59', '60_69', '70_79', '80_89', '90_100']].values))
 
 # parameters
-data = covid_data[covid_data["Location"] == "Italy"]["Cumulative_cases"].values
+country = "Argentina"
+country_data = covid_data[covid_data["Location"] == "Argentina"]
+data = country_data["Cumulative_cases"].values
+times = country_data["Date_reported"].values
+plt.title(f'Cumulative Cases COVID-19 Data ({country})')
+plt.xlabel(f"Time in Days ({datetime.datetime.utcfromtimestamp(times[0].tolist()/1e9).date()} - {datetime.datetime.utcfromtimestamp(times[-1].tolist()/1e9).date()})")
+plt.ylabel('Cumulative Cases')
+plt.plot(data)
+plt.autoscale()
+plt.savefig(f'fitting\pics\{country}_cumulative_cases.png')
+plt.show(block=False)
 # data = data[:len(data)//3]
-data = data[700:] # start at nth day
+# start at nth day
+data = data[650:]
+times = times[650:]
 print(len(data))
 data -= data[0] # start cumulative sum at 0
-agegroups = agegroup_lookup["Italy"]
+agegroups = agegroup_lookup["Argentina"]
 outbreak_shift = 200  # shift the outbreak by this many days (negative values are allowed)
 params_init_min_max = {"beta": (0.9, 0.1, 2), "zeta": (1./10, 1./50, 1), "mu": (1./60, 1./300, 1./5)}  # form: {parameter: (initial guess, minimum value, max value)}
      
@@ -55,7 +68,7 @@ def fitter(x, beta, zeta, mu):
     # print(x)
 
     # print()
-    return infections.cumsum()
+    return infections.cumsum() # Fit to cumulative sum of infections
 
 
 # Fit the model
@@ -71,12 +84,13 @@ fit_method = "leastsq"
 
 result = mod.fit(y_data, params, method=fit_method, x=x_data)
      
-
-result.plot_fit(datafmt="-")
+plt.figure()
+result.plot_fit(datafmt="-", xlabel=f"Time in Days ({datetime.datetime.utcfromtimestamp(times[0].tolist()/1e9).date()} - {datetime.datetime.utcfromtimestamp(times[-1].tolist()/1e9).date()}) (Outbreak Shift = {outbreak_shift})", ylabel="Cumulative Infections", title=f"Fitting SEIQRS Model to {country} COVID-19 Data")
+plt.savefig(f"fitting\pics\\fit_{country}.png")
 print(result.best_values)
-plt.show(block=False)
+plt.show(block=True)
 
-# Using the fitted parameters
+# Using the fitted parameters to model the future outbreak
 beta = result.best_values["beta"]
 zeta = result.best_values["zeta"]
 mu = result.best_values["mu"]
@@ -105,34 +119,28 @@ print(f'Cases(max) = {max(I+Q)}')
 
 # R Plot
 plt.figure()
-plt.xlim(0, 160)
-plt.ylim(0, 6)
 plt.plot(t, r_vals, label = "Reproductive Number")
 plt.axhline(y = 1, linestyle = '--')
-plt.title(f'Reproductive Number over Time')
+plt.title(f'Reproductive Number over Time ({country})')
 plt.xlabel('Time (Days)')
 plt.ylabel('Reproductive Number')
-# plt.savefig(f'pics\{test_case} Case_R_plot.png')
 plt.autoscale()
+plt.savefig(f'fitting\pics\{country}_R_plot.png')
 plt.show(block=False)
 
 #Plot Stacked Area Graph
 plt.figure()
-plt.xlim(0, 150)
-plt.ylim(0, 120000)
 plt.stackplot(t, E, I, Q, S, R, labels=['Exposed', 'Infected', 'Quarantined','Susceptible','Recovered'])
 plt.legend(loc='upper right')
-plt.title(f'Stacked SEIQRS States over Time')
+plt.title(f'Stacked SEIQRS States over Time ({country})')
 plt.xlabel('Time (Days)')
 plt.ylabel('Amount of Population (People)')
-# plt.savefig(f'pics\{test_case} Case_Stack.png')
 plt.autoscale()
+plt.savefig(f'fitting\pics\{country}_Stack.png')
 plt.show(block=False)
 
 #Plot Line Graph
 plt.figure()
-plt.xlim(0, 150)
-plt.ylim(0, 120000)
 plt.plot(t, S, label = "Susceptible")
 plt.plot(t, E, label = "Exposed")
 plt.plot(t, I, label = "Infected")
@@ -144,9 +152,9 @@ plt.axhline(y = Ie, linestyle = '--')
 plt.axhline(y = Qe, linestyle = '--')
 plt.axhline(y = Re, linestyle = '--')
 plt.legend(loc='upper right')
-plt.title(f'SEIQRS State over Time')
+plt.title(f'SEIQRS State over Time ({country})')
 plt.xlabel('Time (Days)')
 plt.ylabel('Amount of Population (People)')
-# plt.savefig(f'pics\{test_case} Case.png')
 plt.autoscale()
+plt.savefig(f'fitting\pics\{country}.png')
 plt.show()
