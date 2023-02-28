@@ -27,30 +27,31 @@ agegroup_lookup = dict(zip(agegroups['Location'], agegroups[['0_9', '10_19', '20
 # parameters
 country = "Philippines"
 country_data = covid_data[covid_data["Location"] == "Philippines"]
-data = country_data["New_cases"].values
+data = country_data["Cumulative_cases"].values
 times = country_data["Date_reported"].values
 plt.title(f'New Cases COVID-19 Data ({country})')
 plt.xlabel(f"Time in Days ({datetime.datetime.utcfromtimestamp(times[0].tolist()/1e9).date()} - {datetime.datetime.utcfromtimestamp(times[-1].tolist()/1e9).date()})")
 plt.ylabel('New Cases')
 plt.plot(data)
 plt.autoscale()
-plt.savefig(f'fitting\\new pics\{country}_new_cases.png')
-plt.show(block=False)
+plt.savefig(rf'fitting//new pics//{country}_new_cases.png')
+# plt.show(block=False)
 # data = data[:len(data)//3]
 # start at nth day
 saved_data = data
-data = data[:200]
+data = data[:450]
+times = times[:450]
+
 # Moving Average
-def moving_average(a, n=3) :
-    ret = np.cumsum(a, dtype=float)
-    ret[n:] = ret[n:] - ret[:-n]
-    return ret[n - 1:] / n
-data = moving_average(data, 20)
-times = times[:200]
+# def moving_average(a, n=3) :
+#     ret = np.cumsum(a, dtype=float)
+#     ret[n:] = ret[n:] - ret[:-n]
+#     return ret[n - 1:] / n
+# data = moving_average(data, 20)
 print(len(data))
 data -= data[0] # start cumulative sum at 0
 agegroups = agegroup_lookup["Philippines"]
-outbreak_shift = 250  # shift the outbreak by this many days (negative values are allowed)
+outbreak_shift = 25  # shift the outbreak by this many days (negative values are allowed)
 params_init_min_max = {"beta": (0.9, 0.1, 2), "zeta": (1./10, 1./50, 1), "mu": (1./60, 1./300, 1./5)}  # form: {parameter: (initial guess, minimum value, max value)}
      
 
@@ -64,18 +65,19 @@ x_data = np.linspace(0, days - 1, days, dtype=int)  # x_data is just [0, 1, ...,
 
 # Given Model Parameters (Based on COVID-19 Research Data)
 phi = 1/9
-gamma = 1/3
-kappa = 1/3
+gamma = 1/5
+kappa = 1/5
+mu = 1/90
 
 # Must Fit Beta, Zeta, Mu
-def fitter(x, beta, zeta, mu):
+def fitter(x, beta, zeta):
     ret = Model(days, agegroups, beta, phi, zeta, gamma, kappa, mu)
     exposed = ret[3]
     # print(deaths_predicted)
     # print(x)
 
     # print()
-    return phi*exposed # Inflow of Infections aka New Cases
+    return (phi*exposed).cumsum() # Inflow of Infections aka New Cases
 
 
 # Fit the model
@@ -93,14 +95,13 @@ result = mod.fit(y_data, params, method=fit_method, x=x_data)
      
 plt.figure()
 result.plot_fit(datafmt="-", xlabel=f"Time in Days ({datetime.datetime.utcfromtimestamp(times[0].tolist()/1e9).date()} - {datetime.datetime.utcfromtimestamp(times[-1].tolist()/1e9).date()}) (Outbreak Shift = {outbreak_shift})", ylabel="New Cases", title=f"Fitting SEIQRS Model to {country} COVID-19 Data")
-plt.savefig(f"fitting\\new pics\\fit_{country}.png")
+plt.savefig(rf"fitting//new pics//fit_{country}.png")
 print(result.best_values)
-plt.show(block=True)
+# plt.show(block=True)
 
 # Using the fitted parameters to model the future outbreak
 beta = result.best_values["beta"]
 zeta = result.best_values["zeta"]
-mu = result.best_values["mu"]
 t, N, S, E, I, Q, R, r_vals = Model(days+700, agegroups, beta, phi, zeta, gamma, kappa, mu)
 
 # Undo Modelling Outbreak Shift
@@ -132,8 +133,8 @@ plt.title(f'Reproductive Number over Time ({country})')
 plt.xlabel('Time (Days)')
 plt.ylabel('Reproductive Number')
 plt.autoscale()
-plt.savefig(f'fitting\\new pics\{country}_R_plot.png')
-plt.show(block=False)
+plt.savefig(rf'fitting//new pics/{country}_R_plot.png')
+# plt.show(block=False)
 
 #Plot Stacked Area Graph
 plt.figure()
@@ -143,8 +144,8 @@ plt.title(f'Stacked SEIQRS States over Time ({country})')
 plt.xlabel('Time (Days)')
 plt.ylabel('Amount of Population (People)')
 plt.autoscale()
-plt.savefig(f'fitting\\new pics\{country}_Stack.png')
-plt.show(block=False)
+plt.savefig(rf'fitting//new pics/{country}_Stack.png')
+# plt.show(block=False)
 
 #Plot Line Graph
 plt.figure()
@@ -163,8 +164,8 @@ plt.title(f'SEIQRS State over Time ({country})')
 plt.xlabel('Time (Days)')
 plt.ylabel('Amount of Population (People)')
 plt.autoscale()
-plt.savefig(f'fitting\\new pics\{country}.png')
-plt.show(block=False)
+plt.savefig(rf'fitting//new pics/{country}.png')
+# plt.show(block=False)
 
 #Plot Cumulative Infections Predicted
 t, N, S, E, I, Q, R, r_vals = Model(len(saved_data)+outbreak_shift, agegroups, beta, phi, zeta, gamma, kappa, mu)
@@ -181,11 +182,11 @@ r_vals = r_vals[outbreak_shift:]
 
 plt.figure()
 plt.plot(t, saved_data, label = "Actual New Cases")
-plt.plot(t, phi*E, label = "Predicted New Cases")
+plt.plot(t, (phi*E).cumsum(), label = "Predicted New Cases")
 plt.legend(loc='upper left')
 plt.title(f'Predicted New Cases over Time ({country})')
 plt.xlabel('Time (Days)')
 plt.ylabel('New Cases (People)')
 plt.autoscale()
-plt.savefig(f'fitting\\new pics\{country}_New_cases.png')
-plt.show()
+plt.savefig(rf'fitting//new pics//{country}_predicted_new_cases.png')
+# plt.show()
