@@ -25,8 +25,8 @@ with tqdm(total=2) as pbar:
 agegroup_lookup = dict(zip(agegroups['Location'], agegroups[['0_9', '10_19', '20_29', '30_39', '40_49', '50_59', '60_69', '70_79', '80_89', '90_100']].values))
 
 # parameters
-country = "Argentina"
-country_data = covid_data[covid_data["Location"] == "Argentina"]
+country = "Philippines"
+country_data = covid_data[covid_data["Location"] == "Philippines"]
 data = country_data["Cumulative_cases"].values
 times = country_data["Date_reported"].values
 plt.title(f'Cumulative Cases COVID-19 Data ({country})')
@@ -38,12 +38,13 @@ plt.savefig(f'fitting\pics\{country}_cumulative_cases.png')
 plt.show(block=False)
 # data = data[:len(data)//3]
 # start at nth day
-data = data[650:]
-times = times[650:]
+saved_data = data
+data = data[:700]
+times = times[:700]
 print(len(data))
 data -= data[0] # start cumulative sum at 0
-agegroups = agegroup_lookup["Argentina"]
-outbreak_shift = 200  # shift the outbreak by this many days (negative values are allowed)
+agegroups = agegroup_lookup["Philippines"]
+outbreak_shift = 300  # shift the outbreak by this many days (negative values are allowed)
 params_init_min_max = {"beta": (0.9, 0.1, 2), "zeta": (1./10, 1./50, 1), "mu": (1./60, 1./300, 1./5)}  # form: {parameter: (initial guess, minimum value, max value)}
      
 
@@ -157,4 +158,28 @@ plt.xlabel('Time (Days)')
 plt.ylabel('Amount of Population (People)')
 plt.autoscale()
 plt.savefig(f'fitting\pics\{country}.png')
+plt.show(block=False)
+
+#Plot Cumulative Infections Predicted
+t, N, S, E, I, Q, R, r_vals = Model(len(saved_data)+outbreak_shift, agegroups, beta, phi, zeta, gamma, kappa, mu)
+
+# Undo Modelling Outbreak Shift
+t = t[outbreak_shift:]
+t -= t[0] + 1 # shift the x axis to start at 1
+S = S[outbreak_shift:]
+E = E[outbreak_shift:]
+I = I[outbreak_shift:]
+Q = Q[outbreak_shift:]
+R = R[outbreak_shift:]
+r_vals = r_vals[outbreak_shift:]
+
+plt.figure()
+plt.plot(t, saved_data, label = "Actual Cumulative Infections")
+plt.plot(t, I.cumsum(), label = "Predicted Cumulative Infections")
+plt.legend(loc='upper left')
+plt.title(f'Predicted Cumulative Infections over Time ({country})')
+plt.xlabel('Time (Days)')
+plt.ylabel('Cumulative Infections')
+plt.autoscale()
+plt.savefig(f'fitting\pics\{country}_Cumulative.png')
 plt.show()
