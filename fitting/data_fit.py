@@ -27,7 +27,7 @@ agegroup_lookup = dict(zip(agegroups['Location'], agegroups[['0_9', '10_19', '20
 # parameters
 country = "Philippines"
 country_data = covid_data[covid_data["Location"] == "Philippines"]
-data = country_data["Cumulative_cases"].values
+data = country_data["New_cases"].values
 times = country_data["Date_reported"].values
 plt.title(f'New Cases COVID-19 Data ({country})')
 plt.xlabel(f"Time in Days ({datetime.datetime.utcfromtimestamp(times[0].tolist()/1e9).date()} - {datetime.datetime.utcfromtimestamp(times[-1].tolist()/1e9).date()})")
@@ -35,12 +35,12 @@ plt.ylabel('New Cases')
 plt.plot(data)
 plt.autoscale()
 plt.savefig(rf'fitting//new pics//{country}_new_cases.png')
-# plt.show(block=False)
+plt.show(block=False)
 # data = data[:len(data)//3]
 # start at nth day
 saved_data = data
-data = data[:450]
-times = times[:450]
+data = data[400:700]
+times = times[400:700]
 
 # Moving Average
 # def moving_average(a, n=3) :
@@ -51,8 +51,8 @@ times = times[:450]
 print(len(data))
 data -= data[0] # start cumulative sum at 0
 agegroups = agegroup_lookup["Philippines"]
-outbreak_shift = 25  # shift the outbreak by this many days (negative values are allowed)
-params_init_min_max = {"beta": (0.9, 0.1, 2), "zeta": (1./10, 1./50, 1), "mu": (1./60, 1./300, 1./5)}  # form: {parameter: (initial guess, minimum value, max value)}
+outbreak_shift = 0  # shift the outbreak by this many days (negative values are allowed)
+params_init_min_max = {"beta": (0.9, 0.1, 2), "zeta": (1./10, 1./50, 1),} #"mu": (1./90, 1./300, 1./5)}  # form: {parameter: (initial guess, minimum value, max value)}
      
 
 days = outbreak_shift + len(data)
@@ -77,7 +77,7 @@ def fitter(x, beta, zeta):
     # print(x)
 
     # print()
-    return (phi*exposed).cumsum() # Inflow of Infections aka New Cases
+    return phi*exposed # Inflow of Infections aka New Cases
 
 
 # Fit the model
@@ -86,7 +86,7 @@ mod = lmfit.Model(fitter)
 for kwarg, (init, mini, maxi) in params_init_min_max.items():
     # mod.set_param_hint(str(kwarg), value=init, min=mini, max=maxi, vary=True)
     mod.set_param_hint(str(kwarg), value=init, min=0, vary=True)
-
+    
 params = mod.make_params()
 fit_method = "leastsq"
      
@@ -95,13 +95,14 @@ result = mod.fit(y_data, params, method=fit_method, x=x_data)
      
 plt.figure()
 result.plot_fit(datafmt="-", xlabel=f"Time in Days ({datetime.datetime.utcfromtimestamp(times[0].tolist()/1e9).date()} - {datetime.datetime.utcfromtimestamp(times[-1].tolist()/1e9).date()}) (Outbreak Shift = {outbreak_shift})", ylabel="New Cases", title=f"Fitting SEIQRS Model to {country} COVID-19 Data")
-plt.savefig(rf"fitting//new pics//fit_{country}.png")
+plt.savefig(rf"fitting//matrix//fit_{country}.png")
 print(result.best_values)
-# plt.show(block=True)
+plt.show(block=True)
 
 # Using the fitted parameters to model the future outbreak
 beta = result.best_values["beta"]
 zeta = result.best_values["zeta"]
+mu = result.best_values["mu"]
 t, N, S, E, I, Q, R, r_vals = Model(days+700, agegroups, beta, phi, zeta, gamma, kappa, mu)
 
 # Undo Modelling Outbreak Shift
@@ -134,7 +135,7 @@ plt.xlabel('Time (Days)')
 plt.ylabel('Reproductive Number')
 plt.autoscale()
 plt.savefig(rf'fitting//new pics/{country}_R_plot.png')
-# plt.show(block=False)
+plt.show(block=False)
 
 #Plot Stacked Area Graph
 plt.figure()
@@ -145,7 +146,7 @@ plt.xlabel('Time (Days)')
 plt.ylabel('Amount of Population (People)')
 plt.autoscale()
 plt.savefig(rf'fitting//new pics/{country}_Stack.png')
-# plt.show(block=False)
+plt.show(block=False)
 
 #Plot Line Graph
 plt.figure()
@@ -165,7 +166,7 @@ plt.xlabel('Time (Days)')
 plt.ylabel('Amount of Population (People)')
 plt.autoscale()
 plt.savefig(rf'fitting//new pics/{country}.png')
-# plt.show(block=False)
+plt.show(block=False)
 
 #Plot Cumulative Infections Predicted
 t, N, S, E, I, Q, R, r_vals = Model(len(saved_data)+outbreak_shift, agegroups, beta, phi, zeta, gamma, kappa, mu)
@@ -189,4 +190,4 @@ plt.xlabel('Time (Days)')
 plt.ylabel('New Cases (People)')
 plt.autoscale()
 plt.savefig(rf'fitting//new pics//{country}_predicted_new_cases.png')
-# plt.show()
+plt.show()

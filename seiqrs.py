@@ -6,6 +6,7 @@ from r_plot import r_plot
 from model import deriv
 
 # Test Case
+save = False
 test_case = 'High Population'
 print(f'Test Case: {test_case}')
 
@@ -51,7 +52,20 @@ plt.title(f'Reproductive Number over Time ({test_case})')
 plt.xlabel('Time (Days)')
 plt.ylabel('Reproductive Number')
 plt.autoscale()
-plt.savefig(f'pics\{test_case} Case_R_plot.png')
+if save:
+    plt.savefig(f'pics\{test_case} Case_R_plot.png')
+plt.show(block=False)
+
+# Plot New Cases
+plt.figure()
+plt.plot(t, phi*E, label = "New Cases")
+plt.plot(t, (phi*E).cumsum(), label = "New Cases Cumulative")
+plt.title(f'New Cases over Time ({test_case})')
+plt.xlabel('Time (Days)')
+plt.ylabel('New Cases')
+plt.autoscale()
+if save:
+    plt.savefig(f'pics\{test_case} Case_New_Cases.png')
 plt.show(block=False)
 
 #Plot Stacked Area Graph
@@ -62,7 +76,8 @@ plt.title(f'Stacked SEIQRS States over Time ({test_case} Case)')
 plt.xlabel('Time (Days)')
 plt.ylabel('Amount of Population (People)')
 plt.autoscale()
-plt.savefig(f'pics\{test_case} Case_Stack.png')
+if save:
+    plt.savefig(f'pics\{test_case} Case_Stack.png')
 plt.show(block=False)
 
 #Plot Line Graph
@@ -82,5 +97,6 @@ plt.title(f'SEIQRS State over Time ({test_case} Case)')
 plt.xlabel('Time (Days)')
 plt.ylabel('Amount of Population (People)')
 plt.autoscale()
-plt.savefig(f'pics\{test_case} Case.png')
+if save:
+    plt.savefig(f'pics\{test_case} Case.png')
 plt.show()
