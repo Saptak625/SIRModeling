@@ -11,15 +11,15 @@ test_case = 'High Population'
 print(f'Test Case: {test_case}')
 
 # Total population, N.
-N = 100000
+N = 1000
 # Initial number of infected and recovered individuals, I0 and R0.
-E0, I0, Q0, R0 = 0, 1, 0, 0
+E0, I0, Q0, R0, D0 = 0, 1, 0, 0, 0
 # Everyone else, S0, is susceptible to infection initially.
 S0 = N - E0 - I0 - Q0 - R0 
 # Contact rate(beta), incubation period(phi, in 1/days), quarantine rate(zeta, in 1/days), mean recovery rate in non-quarantine(gamma, in 1/days), mean recovery rate in quarantine(kappa, in 1/days), and immunity wearoff rate(mu, in 1/days).
-beta, phi, zeta, gamma, kappa, mu = 0.9, 1./10, (1./10), 1./10, 1./10, (1./60)
+beta, phi, zeta, gamma, kappa, mu, alpha, epsilon = 0.9, 1./10, (1./10), 1./10, 1./10, (1./60), 0.1, 0.1
 # A grid of time points (in days)
-t = np.linspace(0, 160*10, 160*10)
+t = np.linspace(0, 600, 600)
 
 print(f'Beta: {beta}, Gamma: {gamma}')
 r0 = r_plot(S0, N, beta, gamma, kappa)
@@ -28,15 +28,15 @@ if (r0) > 1:
     print('Epidemic!')
 
 # Initial conditions vector
-y0 = S0, E0, I0, Q0, R0
+y0 = S0, E0, I0, Q0, R0, D0
 # Integrate the SIR equations over the time grid, t.
-ret = odeint(deriv, y0, t, args=(N, beta, phi, zeta, gamma, kappa, mu))
-S, E, I, Q, R = ret.T
+ret = odeint(deriv, y0, t, args=(N, beta, phi, zeta, gamma, kappa, mu, alpha, epsilon))
+S, E, I, Q, R, D = ret.T
 
 Se = (N*(gamma+zeta))/beta
 Ie = (phi*kappa*mu*N*(beta-gamma-zeta))/(beta*((kappa*(gamma+zeta)*(mu+phi))+(phi*mu*(kappa+zeta))))
 Ee = (beta*Se*Ie)/(N*phi)
-Qe = (zeta*Ie)/(kappa)
+Qe = (zeta*Ie) / kappa
 Re = (Ie*(gamma+zeta))/mu
 
 print(f'Se: {Se}, Ee: {Ee}, Ie: {Ie}, Qe: {Qe}, Re: {Re}')
@@ -57,20 +57,20 @@ if save:
 plt.show(block=False)
 
 # Plot New Cases
-plt.figure()
-plt.plot(t, phi*E, label = "New Cases")
-plt.plot(t, (phi*E).cumsum(), label = "New Cases Cumulative")
-plt.title(f'New Cases over Time ({test_case})')
-plt.xlabel('Time (Days)')
-plt.ylabel('New Cases')
-plt.autoscale()
-if save:
-    plt.savefig(f'pics\{test_case} Case_New_Cases.png')
-plt.show(block=False)
+# plt.figure()
+# plt.plot(t, phi*E, label = "New Cases")
+# plt.plot(t, (phi*E).cumsum(), label = "New Cases Cumulative")
+# plt.title(f'New Cases over Time ({test_case})')
+# plt.xlabel('Time (Days)')
+# plt.ylabel('New Cases')
+# plt.autoscale()
+# if save:
+#     plt.savefig(f'pics\{test_case} Case_New_Cases.png')
+# plt.show(block=False)
 
 #Plot Stacked Area Graph
 plt.figure()
-plt.stackplot(t, E, I, Q, S, R, labels=['Exposed', 'Infected', 'Quarantined','Susceptible','Recovered'])
+plt.stackplot(t, E, I, Q, S, R, D, labels=['Exposed', 'Infected', 'Quarantined','Susceptible','Recovered'])
 plt.legend(loc='upper right')
 plt.title(f'Stacked SEIQRS States over Time ({test_case} Case)')
 plt.xlabel('Time (Days)')
@@ -87,11 +87,12 @@ plt.plot(t, E, label = "Exposed")
 plt.plot(t, I, label = "Infected")
 plt.plot(t, Q, label = "Quarantined")
 plt.plot(t, R, label = "Recovered")
-plt.axhline(y = Se, linestyle = '--')
-plt.axhline(y = Ee, linestyle = '--')
-plt.axhline(y = Ie, linestyle = '--')
-plt.axhline(y = Qe, linestyle = '--')
-plt.axhline(y = Re, linestyle = '--')
+plt.plot(t, D, label = "Dead")
+# plt.axhline(y = Se, linestyle = '--')
+# plt.axhline(y = Ee, linestyle = '--')
+# plt.axhline(y = Ie, linestyle = '--')
+# plt.axhline(y = Qe, linestyle = '--')
+# plt.axhline(y = Re, linestyle = '--')
 plt.legend(loc='upper right')
 plt.title(f'SEIQRS State over Time ({test_case} Case)')
 plt.xlabel('Time (Days)')

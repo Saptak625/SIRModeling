@@ -27,7 +27,7 @@ agegroup_lookup = dict(zip(agegroups['Location'], agegroups[['0_9', '10_19', '20
 # parameters
 country = "Philippines"
 country_data = covid_data[covid_data["Location"] == "Philippines"]
-data = country_data["New_cases"].values
+data = country_data["Cumulative_deaths"].values
 times = country_data["Date_reported"].values
 plt.title(f'New Cases COVID-19 Data ({country})')
 plt.xlabel(f"Time in Days ({datetime.datetime.utcfromtimestamp(times[0].tolist()/1e9).date()} - {datetime.datetime.utcfromtimestamp(times[-1].tolist()/1e9).date()})")
@@ -39,8 +39,8 @@ plt.show(block=False)
 # data = data[:len(data)//3]
 # start at nth day
 saved_data = data
-data = data[400:700]
-times = times[400:700]
+data = data[:400]
+times = times[:400]
 
 # Moving Average
 # def moving_average(a, n=3) :
@@ -51,7 +51,7 @@ times = times[400:700]
 print(len(data))
 data -= data[0] # start cumulative sum at 0
 agegroups = agegroup_lookup["Philippines"]
-outbreak_shift = 0  # shift the outbreak by this many days (negative values are allowed)
+outbreak_shift = 200  # shift the outbreak by this many days (negative values are allowed)
 params_init_min_max = {"beta": (0.9, 0.1, 2), "zeta": (1./10, 1./50, 1),} #"mu": (1./90, 1./300, 1./5)}  # form: {parameter: (initial guess, minimum value, max value)}
      
 
@@ -68,16 +68,18 @@ phi = 1/9
 gamma = 1/5
 kappa = 1/5
 mu = 1/90
+alpha = 0.015
+epsilon = 0.015
 
 # Must Fit Beta, Zeta, Mu
 def fitter(x, beta, zeta):
-    ret = Model(days, agegroups, beta, phi, zeta, gamma, kappa, mu)
-    exposed = ret[3]
+    ret = Model(days, agegroups, beta, phi, zeta, gamma, kappa, mu, alpha, epsilon)
+    return ret[7]
     # print(deaths_predicted)
     # print(x)
 
     # print()
-    return phi*exposed # Inflow of Infections aka New Cases
+    # return phi*exposed # Inflow of Infections aka New Cases
 
 
 # Fit the model
