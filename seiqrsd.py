@@ -11,7 +11,7 @@ test_case = 'High Population'
 print(f'Test Case: {test_case}')
 
 # Total population, N.
-N = 1000
+N = 100000
 # Initial number of infected and recovered individuals, I0 and R0.
 E0, I0, Q0, R0, D0 = 0, 1, 0, 0, 0
 # Everyone else, S0, is susceptible to infection initially.
@@ -19,10 +19,10 @@ S0 = N - E0 - I0 - Q0 - R0
 # Contact rate(beta), incubation period(phi, in 1/days), quarantine rate(zeta, in 1/days), mean recovery rate in non-quarantine(gamma, in 1/days), mean recovery rate in quarantine(kappa, in 1/days), and immunity wearoff rate(mu, in 1/days).
 beta, phi, zeta, gamma, kappa, mu, alpha, epsilon = 0.9, 1./10, (1./10), 1./10, 1./10, (1./60), 0.1, 0.1
 # A grid of time points (in days)
-t = np.linspace(0, 600, 600)
+t = np.linspace(0, 1600, 1600)
 
 print(f'Beta: {beta}, Gamma: {gamma}')
-r0 = r_plot(S0, N, beta, gamma, kappa)
+r0 = r_plot(S0, N, beta, gamma, kappa, alpha)
 print(f'R0: {r0}')
 if (r0) > 1:
     print('Epidemic!')
@@ -45,7 +45,7 @@ print(f'Imax = {max(I)}')
 print(f'Cases(max) = {max(I+Q)}')
 
 # R Plot
-r_vals = r_plot(S, N, beta, gamma, zeta)
+r_vals = r_plot(S, N, beta, gamma, zeta, alpha)
 plt.plot(t, r_vals, label = "Reproductive Number")
 plt.axhline(y = 1, linestyle = '--')
 plt.title(f'Reproductive Number over Time ({test_case})')
@@ -57,16 +57,15 @@ if save:
 plt.show(block=False)
 
 # Plot New Cases
-# plt.figure()
-# plt.plot(t, phi*E, label = "New Cases")
-# plt.plot(t, (phi*E).cumsum(), label = "New Cases Cumulative")
-# plt.title(f'New Cases over Time ({test_case})')
-# plt.xlabel('Time (Days)')
-# plt.ylabel('New Cases')
-# plt.autoscale()
-# if save:
-#     plt.savefig(f'pics\{test_case} Case_New_Cases.png')
-# plt.show(block=False)
+plt.figure()
+plt.plot(t, D)
+plt.title(f'Cumulative Deaths over Time ({test_case})')
+plt.xlabel('Time (Days)')
+plt.ylabel('Deaths')
+plt.autoscale()
+if save:
+    plt.savefig(f'pics\{test_case} Case_New_Cases.png')
+plt.show(block=False)
 
 #Plot Stacked Area Graph
 plt.figure()

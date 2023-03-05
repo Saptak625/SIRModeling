@@ -25,8 +25,8 @@ with tqdm(total=2) as pbar:
 agegroup_lookup = dict(zip(agegroups['Location'], agegroups[['0_9', '10_19', '20_29', '30_39', '40_49', '50_59', '60_69', '70_79', '80_89', '90_100']].values))
 
 # parameters
-country = "Philippines"
-country_data = covid_data[covid_data["Location"] == "Philippines"]
+country = "Italy"
+country_data = covid_data[covid_data["Location"] == "Italy"]
 data = country_data["Cumulative_deaths"].values
 times = country_data["Date_reported"].values
 plt.title(f'New Cases COVID-19 Data ({country})')
@@ -39,8 +39,8 @@ plt.show(block=False)
 # data = data[:len(data)//3]
 # start at nth day
 saved_data = data
-data = data[:400]
-times = times[:400]
+data = data[:300]
+times = times[:300]
 
 # Moving Average
 # def moving_average(a, n=3) :
@@ -50,9 +50,9 @@ times = times[:400]
 # data = moving_average(data, 20)
 print(len(data))
 data -= data[0] # start cumulative sum at 0
-agegroups = agegroup_lookup["Philippines"]
-outbreak_shift = 200  # shift the outbreak by this many days (negative values are allowed)
-params_init_min_max = {"beta": (0.9, 0.1, 2), "zeta": (1./10, 1./50, 1),} #"mu": (1./90, 1./300, 1./5)}  # form: {parameter: (initial guess, minimum value, max value)}
+agegroups = agegroup_lookup["Italy"]
+outbreak_shift = 0  # shift the outbreak by this many days (negative values are allowed)
+params_init_min_max = {"beta": (0.9, 0.1, 2), "zeta": (1./10, 1./50, 1), "mu": (1./90, 1./500, 1./5), "alpha": (1./50, 1./500, 1)} #"epsilon": (1./50, 1./500, 1)}  # form: {parameter: (initial guess, minimum value, max value)}
      
 
 days = outbreak_shift + len(data)
@@ -64,16 +64,13 @@ else:
 x_data = np.linspace(0, days - 1, days, dtype=int)  # x_data is just [0, 1, ..., max_days] array
 
 # Given Model Parameters (Based on COVID-19 Research Data)
-phi = 1/9
-gamma = 1/5
-kappa = 1/5
-mu = 1/90
-alpha = 0.015
-epsilon = 0.015
+phi = 1/3
+gamma = 1/9
+kappa = 1/9
 
 # Must Fit Beta, Zeta, Mu
-def fitter(x, beta, zeta):
-    ret = Model(days, agegroups, beta, phi, zeta, gamma, kappa, mu, alpha, epsilon)
+def fitter(x, beta, zeta, mu, alpha):
+    ret = Model(days, agegroups, beta, phi, zeta, gamma, kappa, mu, alpha, alpha)
     return ret[7]
     # print(deaths_predicted)
     # print(x)
@@ -105,7 +102,10 @@ plt.show(block=True)
 beta = result.best_values["beta"]
 zeta = result.best_values["zeta"]
 mu = result.best_values["mu"]
-t, N, S, E, I, Q, R, r_vals = Model(days+700, agegroups, beta, phi, zeta, gamma, kappa, mu)
+alpha = result.best_values["alpha"]
+epsilon = alpha
+
+t, N, S, E, I, Q, R, D, r_vals = Model(days+100, agegroups, beta, phi, zeta, gamma, kappa, mu, alpha, epsilon)
 
 # Undo Modelling Outbreak Shift
 t = t[outbreak_shift:]
@@ -115,6 +115,7 @@ E = E[outbreak_shift:]
 I = I[outbreak_shift:]
 Q = Q[outbreak_shift:]
 R = R[outbreak_shift:]
+D = D[outbreak_shift:]
 r_vals = r_vals[outbreak_shift:]
 
 Se = (N*(gamma+zeta))/beta
@@ -141,7 +142,7 @@ plt.show(block=False)
 
 #Plot Stacked Area Graph
 plt.figure()
-plt.stackplot(t, E, I, Q, S, R, labels=['Exposed', 'Infected', 'Quarantined','Susceptible','Recovered'])
+plt.stackplot(t, E, I, Q, S, R, D, labels=['Exposed', 'Infected', 'Quarantined','Susceptible','Recovered'])
 plt.legend(loc='upper right')
 plt.title(f'Stacked SEIQRS States over Time ({country})')
 plt.xlabel('Time (Days)')
@@ -157,13 +158,14 @@ plt.plot(t, E, label = "Exposed")
 plt.plot(t, I, label = "Infected")
 plt.plot(t, Q, label = "Quarantined")
 plt.plot(t, R, label = "Recovered")
+plt.plot(t, D, label = "Dead")
 plt.axhline(y = Se, linestyle = '--')
 plt.axhline(y = Ee, linestyle = '--')
 plt.axhline(y = Ie, linestyle = '--')
 plt.axhline(y = Qe, linestyle = '--')
 plt.axhline(y = Re, linestyle = '--')
 plt.legend(loc='upper right')
-plt.title(f'SEIQRS State over Time ({country})')
+plt.title(f'SEIQRSD State over Time ({country})')
 plt.xlabel('Time (Days)')
 plt.ylabel('Amount of Population (People)')
 plt.autoscale()
@@ -171,7 +173,7 @@ plt.savefig(rf'fitting//new pics/{country}.png')
 plt.show(block=False)
 
 #Plot Cumulative Infections Predicted
-t, N, S, E, I, Q, R, r_vals = Model(len(saved_data)+outbreak_shift, agegroups, beta, phi, zeta, gamma, kappa, mu)
+t, N, S, E, I, Q, R, D, r_vals = Model(len(y_data) + 100, agegroups, beta, phi, zeta, gamma, kappa, mu, alpha, epsilon)
 
 # Undo Modelling Outbreak Shift
 t = t[outbreak_shift:]
@@ -181,15 +183,16 @@ E = E[outbreak_shift:]
 I = I[outbreak_shift:]
 Q = Q[outbreak_shift:]
 R = R[outbreak_shift:]
+D = D[outbreak_shift:]
 r_vals = r_vals[outbreak_shift:]
 
 plt.figure()
-plt.plot(t, saved_data, label = "Actual New Cases")
-plt.plot(t, (phi*E).cumsum(), label = "Predicted New Cases")
+plt.plot(t, saved_data[:len(y_data) + 100], label = "Actual Cumulative Deaths")
+plt.plot(t, D[:len(y_data) + 100], label = "Predicted Cumulative Deaths")
 plt.legend(loc='upper left')
-plt.title(f'Predicted New Cases over Time ({country})')
+plt.title(f'Predicted Cumulative Deaths over Time ({country})')
 plt.xlabel('Time (Days)')
-plt.ylabel('New Cases (People)')
+plt.ylabel('Deaths (People)')
 plt.autoscale()
 plt.savefig(rf'fitting//new pics//{country}_predicted_new_cases.png')
 plt.show()

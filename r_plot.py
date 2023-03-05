@@ -1,2 +1,2 @@
-def r_plot(susceptible, N, beta, gamma, zeta):
-    return (beta * (susceptible/N)) / (gamma + zeta)
+def r_plot(susceptible, N, beta, gamma, zeta, alpha):
+    return (beta * (susceptible/N)) / (gamma + zeta + alpha)
