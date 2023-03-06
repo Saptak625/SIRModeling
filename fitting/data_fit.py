@@ -25,22 +25,23 @@ with tqdm(total=2) as pbar:
 agegroup_lookup = dict(zip(agegroups['Location'], agegroups[['0_9', '10_19', '20_29', '30_39', '40_49', '50_59', '60_69', '70_79', '80_89', '90_100']].values))
 
 # parameters
-country = "Italy"
-country_data = covid_data[covid_data["Location"] == "Italy"]
+country = "Pakistan"
+country_data = covid_data[covid_data["Location"] == "Pakistan"]
+infection_data = country_data["Cumulative_cases"].values
 data = country_data["Cumulative_deaths"].values
 times = country_data["Date_reported"].values
-plt.title(f'New Cases COVID-19 Data ({country})')
+plt.title(f'Cumulative Deaths COVID-19 Data ({country})')
 plt.xlabel(f"Time in Days ({datetime.datetime.utcfromtimestamp(times[0].tolist()/1e9).date()} - {datetime.datetime.utcfromtimestamp(times[-1].tolist()/1e9).date()})")
-plt.ylabel('New Cases')
+plt.ylabel('Cumulative Deaths')
 plt.plot(data)
 plt.autoscale()
-plt.savefig(rf'fitting//new pics//{country}_new_cases.png')
+plt.savefig(rf'fitting//new pics//{country}_cumulative_deaths.png')
 plt.show(block=False)
 # data = data[:len(data)//3]
 # start at nth day
 saved_data = data
-data = data[:300]
-times = times[:300]
+data = data[:350]
+times = times[:350]
 
 # Moving Average
 # def moving_average(a, n=3) :
@@ -50,7 +51,7 @@ times = times[:300]
 # data = moving_average(data, 20)
 print(len(data))
 data -= data[0] # start cumulative sum at 0
-agegroups = agegroup_lookup["Italy"]
+agegroups = agegroup_lookup["Pakistan"]
 outbreak_shift = 0  # shift the outbreak by this many days (negative values are allowed)
 params_init_min_max = {"beta": (0.9, 0.1, 2), "zeta": (1./10, 1./50, 1), "mu": (1./90, 1./500, 1./5), "alpha": (1./50, 1./500, 1)} #"epsilon": (1./50, 1./500, 1)}  # form: {parameter: (initial guess, minimum value, max value)}
      
@@ -64,9 +65,9 @@ else:
 x_data = np.linspace(0, days - 1, days, dtype=int)  # x_data is just [0, 1, ..., max_days] array
 
 # Given Model Parameters (Based on COVID-19 Research Data)
-phi = 1/3
-gamma = 1/9
-kappa = 1/9
+phi = 1./3
+gamma = 1./9
+kappa = 1./9
 
 # Must Fit Beta, Zeta, Mu
 def fitter(x, beta, zeta, mu, alpha):
@@ -93,8 +94,8 @@ fit_method = "leastsq"
 result = mod.fit(y_data, params, method=fit_method, x=x_data)
      
 plt.figure()
-result.plot_fit(datafmt="-", xlabel=f"Time in Days ({datetime.datetime.utcfromtimestamp(times[0].tolist()/1e9).date()} - {datetime.datetime.utcfromtimestamp(times[-1].tolist()/1e9).date()}) (Outbreak Shift = {outbreak_shift})", ylabel="New Cases", title=f"Fitting SEIQRS Model to {country} COVID-19 Data")
-plt.savefig(rf"fitting//matrix//fit_{country}.png")
+result.plot_fit(datafmt="-", xlabel=f"Time in Days ({datetime.datetime.utcfromtimestamp(times[0].tolist()/1e9).date()} - {datetime.datetime.utcfromtimestamp(times[-1].tolist()/1e9).date()}) (Outbreak Shift = {outbreak_shift})", ylabel="Cumulative Deaths", title=f"Fitting SEIQRS Model to {country} COVID-19 Data")
+plt.savefig(rf"fitting//new pics//fit_{country}.png")
 print(result.best_values)
 plt.show(block=True)
 
@@ -103,6 +104,7 @@ beta = result.best_values["beta"]
 zeta = result.best_values["zeta"]
 mu = result.best_values["mu"]
 alpha = result.best_values["alpha"]
+
 epsilon = alpha
 
 t, N, S, E, I, Q, R, D, r_vals = Model(days+100, agegroups, beta, phi, zeta, gamma, kappa, mu, alpha, epsilon)
@@ -172,27 +174,25 @@ plt.autoscale()
 plt.savefig(rf'fitting//new pics/{country}.png')
 plt.show(block=False)
 
-#Plot Cumulative Infections Predicted
-t, N, S, E, I, Q, R, D, r_vals = Model(len(y_data) + 100, agegroups, beta, phi, zeta, gamma, kappa, mu, alpha, epsilon)
-
-# Undo Modelling Outbreak Shift
-t = t[outbreak_shift:]
-t -= t[0] + 1 # shift the x axis to start at 1
-S = S[outbreak_shift:]
-E = E[outbreak_shift:]
-I = I[outbreak_shift:]
-Q = Q[outbreak_shift:]
-R = R[outbreak_shift:]
-D = D[outbreak_shift:]
-r_vals = r_vals[outbreak_shift:]
+#Plot Cumulative Infections
+plt.figure()
+plt.plot(t, infection_data[:len(t)], label = "Actual Cumulative Infections")
+# plt.plot(t, (phi*E).cumsum(), label = "Predicted Cumulative Infections")
+plt.legend(loc='upper left')
+plt.title(f'Cumulative Infections over Time ({country})')
+plt.xlabel('Time (Days)')
+plt.ylabel('Infections (People)')
+plt.autoscale()
+plt.savefig(rf'fitting//new pics//{country}_cumulative_infections.png')
+plt.show(block=False)
 
 plt.figure()
-plt.plot(t, saved_data[:len(y_data) + 100], label = "Actual Cumulative Deaths")
-plt.plot(t, D[:len(y_data) + 100], label = "Predicted Cumulative Deaths")
+# plt.plot(t, infe[:len(t)], label = "Actual Cumulative Infections")
+plt.plot(t, (phi*E).cumsum(), label = "Predicted Cumulative Infections")
 plt.legend(loc='upper left')
-plt.title(f'Predicted Cumulative Deaths over Time ({country})')
+plt.title(f'Predicted Cumulative Infections over Time ({country})')
 plt.xlabel('Time (Days)')
-plt.ylabel('Deaths (People)')
+plt.ylabel('Infections (People)')
 plt.autoscale()
-plt.savefig(rf'fitting//new pics//{country}_predicted_new_cases.png')
+plt.savefig(rf'fitting//new pics//{country}_predicted_cumulative_infections.png')
 plt.show()
