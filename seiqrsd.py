@@ -16,7 +16,7 @@ N = 1000
 E0, I0, Q0, R0, D0 = 0, 1, 0, 0, 0
 # Everyone else, S0, is susceptible to infection initially.
 S0 = N - E0 - I0 - Q0 - R0 - D0
-# Contact rate(beta), incubation period(phi, in 1/days), quarantine rate(zeta, in 1/days), mean recovery rate in non-quarantine(gamma, in 1/days), mean recovery rate in quarantine(kappa, in 1/days), and immunity wearoff rate(mu, in 1/days).
+# Contact rate(beta), incubation period(phi, in 1/days), quarantine rate(zeta, in 1/days), mean recovery rate in non-quarantine(gamma, in 1/days), mean recovery rate in quarantine(kappa, in 1/days), immunity wearoff rate(mu, in 1/days), death rate in non-quarantine(alpha, in 1/days), and death rate in quarantine(epsilon, in 1/days).
 beta, phi, zeta, gamma, kappa, mu, alpha, epsilon = 0.9, 1./10, 1.3 * (1./10), 1./10, 1./10, (1./60), 0.002, 0.002
 # A grid of time points (in days)
 t = np.linspace(0, 150, 150)
